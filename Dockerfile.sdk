@@ -1,0 +1,34 @@
+FROM i386/debian:bookworm as my-little-keitai-sdk
+
+# Install system tools
+RUN apt-get update && apt-get install -y wget unzip && rm -rf /var/lib/apt/lists/* 
+
+# Locale, just in case
+RUN apt-get update && apt-get install -y locales && rm -rf /var/lib/apt/lists/* \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+ENV LANG en_US.utf8
+
+# Install Java WTK native dependencies
+RUN apt-get update && \
+    apt-get install -y build-essential libxpm-dev libxt-dev libx11-dev libice-dev libsm-dev libc6-dev libstdc++-12-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Java 8 Development Kit
+RUN wget https://mirrors.huaweicloud.com/java/jdk/8u202-b08/jdk-8u202-linux-i586.tar.gz && \
+    mkdir /opt/jdk && tar -zxf jdk-8u202-linux-i586.tar.gz -C /opt/jdk && rm jdk-8u202-linux-i586.tar.gz && \
+    update-alternatives --install /usr/bin/java java /opt/jdk/jdk1.8.0_202/bin/java 100 && \
+    update-alternatives --install /usr/bin/javac javac /opt/jdk/jdk1.8.0_202/bin/javac 100 && \
+    update-alternatives --display java && update-alternatives --display javac && java -version
+    
+# Install Java Wireless Toolkit (TODO: mirror)
+RUN wget https://www.dropbox.com/s/elxibfgkcxndo3k/sun_java_wireless_toolkit-2.5.2_01-linuxi486.bin.sh?dl=1 \
+      -O sun_java_wireless_toolkit-2.5.2_01-linuxi486.bin.sh && \
+    dd bs=1024 if="./sun_java_wireless_toolkit-2.5.2_01-linuxi486.bin.sh" of="./j2mewtk-unix.zip" skip=26 && \
+    unzip -oq "./j2mewtk-unix.zip" -d "/opt/sun-wtk" && \
+    rm sun_java_wireless_toolkit-2.5.2_01-linuxi486.bin.sh j2mewtk-unix.zip && \
+    env vmpath="/opt/jdk/jdk1.8.0_202/bin/" /bin/bash -c 'sed -i -e "s@javapathtowtk=.*@javapathtowtk=$vmpath@" \
+      "/opt/sun-wtk/bin/"{ktoolbar,emulator,prefs,utils,defaultdevice,wscompile,mekeytool,siptool,i18ntool} \
+      "/opt/sun-wtk/apps/WMADemo/bridgeAPIExample/runBridgeAPIExample.sh"'
+
+ENV WTK_HOME=/opt/sun-wtk
+ENV PATH=$PATH:$WTK_HOME/bin
