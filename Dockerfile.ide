@@ -1,0 +1,8 @@
+FROM my-little-keitai-sdk as my-little-keitai-ide
+
+# Install NetBeans (TODO: mirror, unattended installation, etc.)
+ADD state.xml .
+RUN wget https://dlc-cdn.sun.com/netbeans/8.2/final/bundles/netbeans-8.2-javase-linux.sh && \
+    chmod +x netbeans-8.2-javase-linux.sh && \
+    ./netbeans-8.2-javase-linux.sh --silent --verbose --state state.xml && \
+    rm netbeans-8.2-javase-linux.sh
